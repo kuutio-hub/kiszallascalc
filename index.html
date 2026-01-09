@@ -289,7 +289,8 @@
             renderInputs();
             state.rates=await loadData('rates','rates.json');
             state.exchangeRates=await updateAndFetchExchangeRates();
-            updateRatePackagesUI();
+            const defaultRatePackage = state.rates.find(p => p.name === "2024") || state.rates[0];
+            updateRatePackagesUI(defaultRatePackage ? defaultRatePackage.id : null);
             const dates=Object.keys(state.exchangeRates).sort((a,b)=>new Date(b)-new Date(a));
             if(dates.length>0)D('exchange-rate-manual').value=state.exchangeRates[dates[0]].HUF.toFixed(2);
             calculateAndDisplay();
@@ -304,7 +305,22 @@
             document.querySelector('.main-grid').oninput=calculateAndDisplay;
             D('rate-package-select').onchange=(e)=>{state.activeRatePackage=state.rates.find(r=>r.id===e.target.value);calculateAndDisplay();};
             D('currency-select').onchange=(e)=>{state.activeCurrency=e.target.value;calculateAndDisplay();};
-            D('add-other-cost-btn').onclick=()=>{state.otherCosts.push({description:'',amount:0,quantity:1});D('other-costs-list').innerHTML='';state.otherCosts.forEach((oc,i)=>{const d=document.createElement('div');d.className='other-costs-item';d.innerHTML=`<input type="text" data-index="${i}" class="other-cost-description" placeholder="Tétel neve" value="${oc.description||''}"><input type="text" data-index="${i}" class="other-cost-amount currency-input" placeholder="Egységár"><input type="number" data-index="${i}" class="other-cost-quantity" placeholder="Menny." value="${oc.quantity||'1'}"><button data-index="${i}" class="btn other-cost-delete" style="background:var(--danger-primary);padding:0.4rem">×</button>`;const amountInput=d.querySelector('.other-cost-amount');amountInput.value=oc.amount?formatNumber(oc.amount):'';const format=()=>{amountInput.value=formatNumber(parseCurrency(amountInput.value));};amountInput.onfocus=()=>amountInput.select();amountInput.oninput=format;amountInput.onblur=format;D('other-costs-list').appendChild(d);});};
+            D('add-other-cost-btn').onclick=()=>{
+                state.otherCosts.push({description:'',amount:0,quantity:1});
+                D('other-costs-list').innerHTML='';
+                state.otherCosts.forEach((oc,i)=>{
+                    const d=document.createElement('div');
+                    d.className='other-costs-item';
+                    d.innerHTML=`<input type="text" data-index="${i}" class="other-cost-description" placeholder="Tétel neve" value="${oc.description||''}"><input type="text" data-index="${i}" class="other-cost-amount currency-input" placeholder="Egységár"><input type="number" data-index="${i}" class="other-cost-quantity" placeholder="Menny." value="${oc.quantity||'1'}"><button data-index="${i}" class="btn other-cost-delete" style="background:var(--danger-primary);padding:0.4rem">×</button>`;
+                    const amountInput=d.querySelector('.other-cost-amount');
+                    const format = () => { amountInput.value = formatNumber(parseCurrency(amountInput.value)) + ' Ft'; };
+                    amountInput.value = oc.amount ? formatNumber(oc.amount) + ' Ft' : '';
+                    amountInput.onfocus=()=>amountInput.select();
+                    amountInput.oninput=format;
+                    amountInput.onblur=format;
+                    D('other-costs-list').appendChild(d);
+                });
+            };
             D('other-costs-list').addEventListener('input',e=>{const i=e.target.dataset.index;if(i){const p=e.target.className.split(' ')[0].split('-')[2];const val=p==='amount'?parseCurrency(e.target.value):e.target.value;state.otherCosts[i][p]=p==='description'?val:parseFloat(val)||0;calculateAndDisplay();}});
             D('other-costs-list').addEventListener('click',e=>{if(e.target.classList.contains('other-cost-delete')){const i=e.target.dataset.index;state.otherCosts.splice(i,1);D('add-other-cost-btn').click();D('add-other-cost-btn').click();calculateAndDisplay();}});
             D('other-costs-confirm-btn').onclick = (e) => { const btn=e.target; btn.textContent='Mentve!'; btn.style.backgroundColor='var(--accent-primary)'; setTimeout(()=>{btn.textContent='OK'; btn.style.backgroundColor='var(--success-primary)';},1500); };
